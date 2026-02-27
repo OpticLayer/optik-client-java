@@ -1,6 +1,7 @@
 # Optic Java SDK (Spring Boot)
 
 Optic Java SDK exports OpenTelemetry traces, metrics, and logs to Optic OTLP HTTP ingestion and includes Spring Boot auto-configuration.
+In Spring Boot (with Logback), existing SLF4J/Logback logs are captured automatically and exported as OTLP logs.
 
 ## Quick Start
 
@@ -74,4 +75,6 @@ sdk.shutdown();
 
 - Add `spring-boot-starter-actuator` in your application to emit standard HTTP/JVM metrics.
 - This SDK registers an `OpenTelemetryMeterRegistry` bridge so Micrometer meters are exported through OpenTelemetry.
-- Trace and log exporters are initialized automatically, but application logs are only exported if your app writes OTel logs (or installs a logging bridge/appender).
+- Trace and log exporters are initialized automatically.
+- A Logback bridge appender is auto-installed (when Logback is present) so regular `SLF4J` logs are exported without manual OTel log calls.
+- The SDK does not create servlet request spans; it exports spans produced by your existing OpenTelemetry instrumentation.

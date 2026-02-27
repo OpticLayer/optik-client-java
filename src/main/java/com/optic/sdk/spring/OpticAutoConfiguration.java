@@ -3,8 +3,8 @@ package com.optic.sdk.spring;
 import com.optic.sdk.Optic;
 import com.optic.sdk.OpticConfig;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
-import jakarta.servlet.Filter;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -12,9 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 
 @AutoConfiguration
@@ -28,6 +26,12 @@ public class OpticAutoConfiguration {
     public Optic opticSdk(OpticProperties properties, Environment environment) {
         OpticConfig config = buildConfig(properties, environment);
         return Optic.init(config);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(OpenTelemetry.class)
+    public OpenTelemetry opticOpenTelemetry(Optic optic) {
+        return optic.getOpenTelemetry();
     }
 
     @Bean
@@ -50,16 +54,12 @@ public class OpticAutoConfiguration {
         return registry;
     }
 
-    @Bean
-    @ConditionalOnClass({Filter.class, FilterRegistrationBean.class})
-    @ConditionalOnMissingBean(name = "opticHttpTelemetryFilter")
-    public FilterRegistrationBean<Filter> opticHttpTelemetryFilter(Optic optic) {
-        FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>();
-        registration.setName("opticHttpTelemetryFilter");
-        registration.setFilter(new OpticHttpTelemetryFilter(optic));
-        registration.addUrlPatterns("/*");
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
-        return registration;
+    @Bean(destroyMethod = "close")
+    @ConditionalOnProperty(prefix = "optic", name = "enable-logs", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnClass(name = {"ch.qos.logback.classic.LoggerContext", "org.slf4j.LoggerFactory"})
+    @ConditionalOnMissingBean(name = "opticLogbackBridge")
+    public AutoCloseable opticLogbackBridge(Optic optic) {
+        return new OpticLogbackBridge(optic);
     }
 
     private static OpticConfig buildConfig(OpticProperties properties, Environment environment) {
