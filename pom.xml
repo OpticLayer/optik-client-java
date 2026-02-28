@@ -17,7 +17,7 @@
     <maven.compiler.target>17</maven.compiler.target>
     <otel.version>1.31.0</otel.version>
     <otel.instrumentation.version>1.31.0-alpha</otel.instrumentation.version>
-    <spring.boot.version>3.2.0</spring.boot.version>
+    <spring.boot.version>3.3.8</spring.boot.version>
   </properties>
 
   <dependencies>
@@ -31,21 +31,7 @@
       <artifactId>opentelemetry-sdk</artifactId>
       <version>${otel.version}</version>
     </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-sdk-metrics</artifactId>
-      <version>${otel.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-sdk-trace</artifactId>
-      <version>${otel.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-sdk-logs</artifactId>
-      <version>${otel.version}</version>
-    </dependency>
+    <!-- sdk-metrics, sdk-trace, sdk-logs are transitive via opentelemetry-sdk -->
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-exporter-otlp</artifactId>
@@ -55,23 +41,28 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <version>1.12.0</version>
+      <version>1.13.10</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry.instrumentation</groupId>
       <artifactId>opentelemetry-micrometer-1.5</artifactId>
       <version>${otel.instrumentation.version}</version>
+      <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-extension-incubator</artifactId>
-      <version>${otel.instrumentation.version}</version>
-    </dependency>
+    <!-- opentelemetry-extension-incubator removed: unused -->
 
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <version>${spring.boot.version}</version>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
       <version>${spring.boot.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>

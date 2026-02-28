@@ -5,8 +5,6 @@ import com.optic.sdk.OpticConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
-import java.util.ArrayList;
-import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -39,19 +37,7 @@ public class OpticAutoConfiguration {
     @ConditionalOnProperty(prefix = "optic", name = "enable-metrics", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean(name = "opticOpenTelemetryMeterRegistry")
     public MeterRegistry opticOpenTelemetryMeterRegistry(Optic optic) {
-        MeterRegistry registry = OpenTelemetryMeterRegistry.builder(optic.getOpenTelemetry()).build();
-
-        List<String> commonTags = new ArrayList<>();
-        OpticConfig cfg = optic.getConfig();
-        addTag(commonTags, "service.name", cfg.getServiceName());
-        addTag(commonTags, "deployment.environment", cfg.getEnvironment());
-        addTag(commonTags, "service.version", cfg.getServiceVersion());
-
-        if (!commonTags.isEmpty()) {
-            registry.config().commonTags(commonTags.toArray(new String[0]));
-        }
-
-        return registry;
+        return OpenTelemetryMeterRegistry.builder(optic.getOpenTelemetry()).build();
     }
 
     @Bean(destroyMethod = "close")
@@ -90,13 +76,6 @@ public class OpticAutoConfiguration {
         }
 
         return config;
-    }
-
-    private static void addTag(List<String> tags, String key, String value) {
-        if (hasText(value)) {
-            tags.add(key);
-            tags.add(value);
-        }
     }
 
     private static boolean hasText(String value) {

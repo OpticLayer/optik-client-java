@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.AppenderBase;
 import com.optic.sdk.Optic;
 import io.opentelemetry.api.common.AttributeKey;
@@ -100,11 +101,36 @@ final class OpticLogbackBridge implements AutoCloseable {
                 if (throwable != null) {
                     record.setAttribute(AttributeKey.stringKey("exception.type"), safe(throwable.getClassName()));
                     record.setAttribute(AttributeKey.stringKey("exception.message"), safe(throwable.getMessage()));
+                    String stackTrace = extractStackTrace(throwable);
+                    if (!stackTrace.isEmpty()) {
+                        record.setAttribute(AttributeKey.stringKey("exception.stacktrace"), stackTrace);
+                    }
                 }
 
                 record.emit();
             } catch (RuntimeException ignored) {
                 // Never break app logging pipeline due to telemetry export errors.
+            }
+        }
+
+        private static String extractStackTrace(IThrowableProxy proxy) {
+            StringBuilder sb = new StringBuilder();
+            appendThrowable(sb, proxy, "");
+            return sb.toString();
+        }
+
+        private static void appendThrowable(StringBuilder sb, IThrowableProxy proxy, String prefix) {
+            sb.append(prefix).append(proxy.getClassName()).append(": ").append(safe(proxy.getMessage()));
+            StackTraceElementProxy[] steps = proxy.getStackTraceElementProxyArray();
+            if (steps != null) {
+                for (StackTraceElementProxy step : steps) {
+                    sb.append("\n\tat ").append(step.getSTEAsString());
+                }
+            }
+            IThrowableProxy cause = proxy.getCause();
+            if (cause != null) {
+                sb.append("\n");
+                appendThrowable(sb, cause, "Caused by: ");
             }
         }
 
